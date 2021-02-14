@@ -18,7 +18,6 @@ library(rio)
 #7. CONCLUSIONS
 
 #DOWNLOAD CRIMES IN BUENOS AIRES
-
 url <- paste0("https://data.buenosaires.gob.ar/api/3/action/",
               "package_show?",
               "id=delitos")
@@ -35,8 +34,15 @@ datasets <- as.vector(unlist(data))
 
 Dataset <- read_csv(data[[4]])
 
+write.csv(Dataset, ".csv").
+
 download.file("https://cdn.buenosaires.gob.ar/datosabiertos/datasets/ministerio-de-justicia-y-seguridad/delitos/delitos_2019.csv", "Baires.csv")
 
+
+write.csv(Dataset, "Baires.csv")
+
+
+#SEE PROBLEMS
 #SEE PROBLEMS
 
 Dataset <- read_csv("Baires.csv")
@@ -47,7 +53,6 @@ Problems <- problems(Dataset)
 
 Problems$row <- as.numeric(Problems$row)
 Dataset$row <- as.numeric(Dataset$row)
-
 
 Dataset <- Dataset %>% 
 mutate(subtipo_delito = ifelse (row %in% Problems$row, Problems$actual, "NA"))
@@ -71,6 +76,10 @@ Security_BA$fecha <- as.Date.character(Security_BA$fecha, format = c("%d-%m-%Y")
 
 Security_BA <- Security_BA %>%
   separate(fecha, sep="-", into = c("year", "month", "day"))
+
+
+write.csv(Security_BA, "Security_Baires.csv")
+
 
 library(lubridate)
 
@@ -148,12 +157,14 @@ ggmap()
 #IMPORT INFORMATION MILANO
   
 url2 <- ("https://dati.comune.milano.it/api/3/action/datastore_search?q=2019&resource_id=8b03b9f2-f2d7-4408-b439-bc6efc093cff")
-  
-  page2 <- GET(url2) # API request
-  status_code(page2) # # Check that the call is successful
-  
-  datalist <- fromJSON(url2) 
-  Milano_2019 <- datalist$result$records
-  view(Milano_2019) 
-  as.data.frame(Milano_2019)
-        
+page2 <- GET(url2) # API request
+status_code(page2) # # Check that the call is successful
+datalist <- fromJSON(url2) 
+Milano_2019 <- datalist$result$records
+view(Milano_2019) 
+as.data.frame(Milano_2019)
+
+translateR::translate(Milano_2019, Milano_2019$Reati_denunciati_tipologia,  )
+
+translateR::translate()
+translateR::getMicrosoftLanguages()
