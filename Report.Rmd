@@ -1,0 +1,71 @@
+---
+title: 'Data Access 2021 | Capstone Project'
+author: "Catalina Mas Pohmajevic"
+date: "February, 21, 2021"
+output:
+  html_document:
+    df_print: paged
+  prettydoc::html_pretty:
+    theme: leonids
+    highlight: github
+subtitle: 'Spider-Wo-Men: with great power comes great responsibility Analysis'
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(httr)
+library(jsonlite)
+library(tidyverse)
+library(ckanr)
+library(rvest)
+library(RCurl)
+library(readr)
+library(rio)
+
+```
+
+#My Analysis
+
+Safety is one of the main issues in Argentina, as in the rest of Latinamerica. As a woman born and raised in the country, I have been always concerned about the topic: How much attention should I pay when I walk by myself along the streets? Should I take the phone out of my pocket? At what time should I go back home to be safe? All these questions usually wandered around my mind. 
+This was what triggered me to focus my analysis on the topic. Two years ago, I moved to Milan where I almost take for granted my safety each time I walk the streets of the city. Therefore my research was initially focused on making a comparison between the databases of Crimes in both cities, Buenos Aires and Milan.
+However, I found out that the Government of Buenos Aires shared publicly open data on Crimes in the City which was, in fact, very complete and descriptive, while the database downloaded at Milan Comune's website was less developed and consequently poorer.
+
+To start with my research I found out that the API CKAN was the API chosen mostly by governments to enable the download, usage and treatment of public data from public repositories or websites. Therefore I installed this package in order to be able to access the databases that were of my interest.
+I started by looking at the information of Buenos Aires.
+I read the instructions and followed them step by step in order to access the CSV that was linked on the page. Therefore, through R I connected to the API, by pasting the link, the package and the id of the dataset. I used the "GET" command to make the API request, and then I checked the status_code on the page. Then, I assigned the JSON file to a vector and from there got the results of the links linked to the package and ID of datasets. Consequently, I knew the most recent dataset was the last one, therefore the 4th link, and I called the fourth link using the command read_csv.
+I downloaded the file so I could start working with the file on my computer. When downloading the file I discovered there were parsing problems and so I assigned these problems to a vector.
+
+
+```{r Buenos Aires}
+url <- paste0("https://data.buenosaires.gob.ar/api/3/action/",
+              "package_show?",
+              "id=delitos")
+page <- GET(url) # API request
+status_code(page) # # Check that the call is successful
+datalist <- fromJSON(url) 
+data <- datalist$result$resources$url
+(data) 
+datasets <- as.vector(unlist(data))
+(datasets)
+Dataset <- read_csv(data[[4]])
+write.csv(Dataset, ".csv").
+
+
+```
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+Dataset <- read_csv("Baires.csv")
+
+Dataset <- Dataset[,-1] 
+Dataset <- Dataset[,-6]  
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
