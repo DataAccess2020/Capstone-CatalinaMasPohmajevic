@@ -27,29 +27,24 @@ library(patchwork)
 #Safety in Buenos Aires
 
 Safety is a big issue all around Latin America. The way we perceive safety when walking around the streets, going back home late at night, and taking care of our personal belongings is something people in developed countries take for granted. Instead, for Latin-Americans these constitute a permanent struggle.
-Back in August 2019 I moved to Milan, where I settled and where now I almost take for granted my safety. Therefore, my research proposal along this Capstone project is to focus on Crime Records publicly available and make a comparison of Crime Records in both cities, Buenos Aires and Milan.
-
-
-To start with my research I found out that the majority of governments put available open public data through the CKAN API, enabling the free download, usage and treatment of public data from repositories and websites. Thanks to both cities' Government Open Data Portals and through this API, I was able to access the datasets to develop my project.
+This was the main reason why I was motivated to research about Buenos Aires’ crime records and analyze it. Thanks to Buenos Aires Government Open Data Portal, I could access a pretty complete dataset in order to develop my Capstone project.
+For the scope of the project, I accessed public data through the CKAN API, enabling the free download, usage and treatment of public data from repositories and websites. 
  
  The roadmap of my Capstone Project was: 
 
-1. Download public available information on Buenos Aires and Milan Databases
+1. Download public available information on Buenos Aires Crime Reports
 
 2. Organize and tidy up the datasets
 
-3. Compare both cities by quantity of crimes reported and crime categories 
-
-4. Crime Rates / Inhabitants in the city
+3. Insights about Crime Reports in Buenos Aires
 
 5. Conclusions
 
 
-#1. Download public available information on Buenos Aires and Milan Databases 
+#1. Download public available information on Buenos Aires' Crime Reports
 
 I installed library(ckanr) in order to be able to access the databases that were of my interest.
-I started by looking at the information of Buenos Aires.
-I read the instructions and followed them step by step in order to access the CSV that was linked on the page. Therefore, through R I connected to the API, by pasting the link, the package and the id of the dataset. I used the "GET" command to make the API request, and then I checked the status_code on the page. Then, I assigned the JSON file to a vector and from there got the results of the links linked to the package and ID of datasets. Consequently, I knew the most recent dataset was the last one, therefore the 4th link, and I called the fourth link using the command read_csv. 
+I read the instructions and followed them step by step in order to access the CSV that was linked on the page. Therefore, through R I connected to the API, by pasting the link, the package and the id of the dataset. I used the "GET" command to make the API request, and then I checked the status_code on the page. Then, I assigned the JSON file to a vector and from there got the results of the links linked to the package and ID of datasets. Consequently, I downloaded each dataset one by one, calling the links with the command csv.
 
 ```{r}
 #Import the information
@@ -67,17 +62,22 @@ data <- datalist$result$resources$url
 datasets <- as.vector(unlist(data))
 (datasets)
 
-Dataset <- read_csv(data[[4]])
+BA17 <- read_csv(data[[2]])
+problems2 <- problems
+BA18 <- read_csv(data[[3]])
+BA19 <- read_csv(data[[4]])
 
-write.csv(Dataset, "Baires.csv")
+problems19 <- problems
 
-Problems <- problems(Dataset)
+write.csv(BA17, "Baires17.csv")
+write.csv(BA18, "Baires18.csv")
+write.csv(BA19, "Baires19.csv")
 
 ```
 
-I downloaded the file so I could start working with the file on my computer. When downloading the file I discovered there were parsing problems and so I assigned these problems to a vector. Then, I saved both files on my computer.
+I downloaded the file so I could start working with the file on my computer. When downloading the file I discovered there were parsing problems and so I assigned these problems to different vector. Then, I saved all files on my computer.
 When inspecting the documents, I found out the information is structured as follows: 
-In the "Baires" dataset, each row (observation) is a crime record.
+Each row (observation) is a crime record.
 The dataset counts with 10 columns:
   id = col_double(),
   fecha = col_character(),
@@ -90,7 +90,7 @@ The dataset counts with 10 columns:
   lat = col_double(),
   long = col_double()
 
-Then, I found out the parsing problems relied on the column "subtipo delito" that is a logical column where it should actually be a "character" variable that should relate to a subcategory of "tipo_delito". 
+Then, I found out the parsing problems relied on the column "subtipo delito" for the file of the 2019 Crimes, that is a logical column where it should actually be a "character" variable that should relate to a subcategory of "tipo_delito". 
 In the "problems" dataset, I found there were 6 columns structured as a report where each observation is the error the parsing process approached: 
 x1: number of observation, thus error.
 row: number of row to which is associated in the original dataset
@@ -104,51 +104,39 @@ However, when I read precisely the problems dataset, I found out that the parsin
 
 ```{r}
 
-write.csv(Dataset, "Baires.csv")
-write.csv(Problems, "Problems.csv")
+Crimes_BA19 <- BA19%>% 
+  select(id, fecha, franja_horaria, tipo_delito, subtipo_delito, comuna, barrio) 
 
-Dataset <- read_csv("Baires.csv")
+Crimes_BA18 <- BA18%>% 
+  select(id, fecha, franja_horaria, tipo_delito, subtipo_delito, comuna, barrio) 
 
-Crimes_BA <- data.frame()
-
-Crimes_BA <- Dataset %>% 
-  select(X1, id, fecha, franja_horaria, tipo_delito, subtipo_delito, comuna, barrio) 
-
-Crimes_BA$Subtipo <- ifelse(Subtipo_Delito$row %in% Crimes_BA$X1, paste0(Subtipo_Delito$actual), "NA")
-
-Dataset <- Dataset[,-7]  
-
-Problems$row <- as.numeric(Problems$row)
-Dataset$X1 <- as.numeric(Dataset$X1)
-
-Dataset$row <- 1:nrow(Dataset)
-
-
-Problems$row <- as.numeric(Problems$row)
-Dataset$row <- as.numeric(Dataset$row)
-
-Crimes_BA <- Crimes_BA %>% 
-  mutate(subtipo_delito = ifelse (X1 %in% Problems$row, Problems$actual, "NA"))
-
-Crimes_BA$subtipo_delito <- gsub('[[:digit:]]+', 'NA', Crimes_BA$subtipo_delito)
-
-
+Crimes_BA17 <- BA17%>% 
+  select(id, fecha, franja_horaria, tipo_delito, subtipo_delito, comuna, barrio) 
 ```
 
 To start with my analysis and based on my perception of unsafety in Buenos Aires, I started by handling the "franja horaria" variable and performing a mutate in order to divide into groups the different parts of the day to understand if there is any relationship between the timeframe and the crimes happened.
 
 ```{r}
-
-Crimes_BA <- Crimes_BA %>% 
-  mutate(timeframe = ifelse (franja_horaria >= 7 & franja_horaria <= 13, "Morning",
-              ifelse (franja_horaria > 13 & franja_horaria <= 18, "Afternoon", 
-               ifelse(franja_horaria > 18 & franja_horaria < 22, "Evening", "Night"))))
-
 Crimes_BA <- as_tibble(Crimes_BA)
 
 Crimes_BA  %>% 
   group_by(franja_horaria, timeframe) %>% 
   count()
+
+Crimes_BA19 <- Crimes_BA19 %>% 
+  mutate(timeframe = ifelse (franja_horaria >= 7 & franja_horaria <= 13, "Morning",
+              ifelse (franja_horaria > 13 & franja_horaria <= 18, "Afternoon", 
+               ifelse(franja_horaria > 18 & franja_horaria < 22, "Evening", "Night"))))
+
+Crimes_BA18 <- Crimes_BA18 %>% 
+  mutate(timeframe = ifelse (franja_horaria >= 7 & franja_horaria <= 13, "Morning",
+              ifelse (franja_horaria > 13 & franja_horaria <= 18, "Afternoon", 
+               ifelse(franja_horaria > 18 & franja_horaria < 22, "Evening", "Night"))))
+
+Crimes_BA17 <- Crimes_BA17 %>% 
+  mutate(timeframe = ifelse (franja_horaria >= 7 & franja_horaria <= 13, "Morning",
+              ifelse (franja_horaria > 13 & franja_horaria <= 18, "Afternoon", 
+               ifelse(franja_horaria > 18 & franja_horaria < 22, "Evening", "Night"))))
 
 ```
 
@@ -157,35 +145,78 @@ Giving the timeframe is also associated to the period of the daylight, which cha
 
 ```{r}
 is.character(Crimes_BA$fecha)
-Crimes_BA$fecha <- as.Date.character(Crimes_BA$fecha, format = c("%d-%m-%Y"))
 
-Crimes_BA <- Crimes_BA %>%
+Crimes_BA19 <- Crimes_BA19 %>%
   separate(fecha, sep="-", into = c("year", "month", "day"))
+
+Crimes_BA19 <- Crimes_BA19 %>%
+  separate(fecha, sep="-", into = c("year", "month", "day"))
+Crimes_BA18 <- Crimes_BA18 %>%
+  separate(fecha, sep="-", into = c("year", "month", "day"))
+Crimes_BA17 <- Crimes_BA17 %>%
+  separate(fecha, sep="-", into = c("year", "month", "day"))
+
 
 ```
 
 Now, it was time to start seeing the general distribution of my dataset.
 
 ```{r}
-Crimes_BA %>%
+Distribution19 <- Crimes_BA19 %>%
   group_by(month) %>% 
   count() %>% 
   ggplot(aes(x = month, y = n))+
   geom_col(fill = "#00abff")+
   theme_bw()
+
+Distribution18 <- Crimes_BA18%>%
+  group_by(month) %>% 
+  count() %>% 
+  ggplot(aes(x = month, y = n))+
+  geom_col(fill = "#00abff")+
+  theme_bw()
+
+Distribution17 <- Crimes_BA17%>%
+  group_by(month) %>% 
+  count() %>% 
+  ggplot(aes(x = month, y = n))+
+  geom_col(fill = "#00abff")+
+  theme_bw()
+
+(Distribution19 | Distribution18 | Distribution17)
+
 ```
 
 As we can see, the distirbution does not suffer variations during the year and, on the contrary to what I have thought beforehand, the distribution does not vary according to season.
 What happens along the day and timeframe?
 
 ```{r}
-Crimes_BA %>% 
+Timeframes19 <- Crimes_BA19 %>% 
   group_by(timeframe, comuna, month) %>% 
   count() %>% 
   na.omit() %>% 
   ggplot(aes(x = timeframe, y = n))+
   geom_col(position = "dodge", fill = "#00abff")+
   theme_bw()
+
+Timeframes18 <- Crimes_BA18 %>% 
+  group_by(timeframe, comuna, month) %>% 
+  count() %>% 
+  na.omit() %>% 
+  ggplot(aes(x = timeframe, y = n))+
+  geom_col(position = "dodge", fill = "#00abff")+
+  theme_bw()
+
+Timeframes17 <- Crimes_BA17 %>% 
+  group_by(timeframe, comuna, month) %>% 
+  count() %>% 
+  na.omit() %>% 
+  ggplot(aes(x = timeframe, y = n))+
+  geom_col(position = "dodge", fill = "#00abff")+
+  theme_bw()
+
+(Timeframes19 | Timeframes18 | Timeframes17)
+
 ```
 
 As we can see, the majority of the crimes recorded happen during the night, therefore between X and X hour.
@@ -265,84 +296,5 @@ theme(legend.position = "right",  legend.title = element_text (size=8), legend.t
 
 ```
 
-For downloading the information related to Milan Crime Reports, I accessed the API and through a similar process I downloaded the csv file. I discovered the data was much pooorer and that I could not do the in-depth analysis I wanted. However, I decided to redirect my analysis towards a more quantitative kind of project where to confront the number and types of crimes in both Buenos Aires and Milan.
-
-```{r}
-
-url2 <- ("https://dati.comune.milano.it/api/3/action/datastore_search?q=2019&resource_id=8b03b9f2-f2d7-4408-b439-bc6efc093cff")
-
-page2 <- GET(url2) # API request
-status_code(page2) # # Check that the call is successful
-
-datalist <- fromJSON(url2) 
-Milano_2019 <- datalist$result$records
-view(Milano_2019) 
-as.data.frame(Milano_2019)
-view(Milano_2019)
-head(Milano_2019)
-download.file("https://dati.comune.milano.it/api/3/action/datastore_search?q=2019&resource_id=8b03b9f2-f2d7-4408-b439-bc6efc093cff", "Milano.csv")
-```
-
-In this dataset, the information is structured as follows:
-
-Every record is a type of crime denounced, having the following variables:
-id:
-anno_rilevamento_reato:
-Crimes Denounced:
-Count:
-Rank: 
 
 
-```{r}
-
-
-```
-For making it easier to handle I changed the names of the variables to english.
-
-```{r}
-summary(Milano_2019)
-names(Milano_2019)[3] <- "Crimes Denounced"
-head(Milano_2019)
-names(Milano_2019)[4] <- "Count"
-```
-
-The last observation of the data frame was a sum up of all the observations, therefore I decided to delete the row.
-
-```{r}
-Milan_2019 <- Milano_2019 %>% 
-  slice(-c(56))
-Milan_2019 = na.omit(Milan_2019)
-Milan_2019$Count <- as.numeric(Milan_2019$Count)
-```
-
-Since the dataset is structured in a way where each observation is a crime category, I thought it could be interesting to unify criteria and group crimes in broader categories. For doing this I created another variable where using "grepl" I matched the different types of crimes with the ones listed on the dataset.
-
-```{r}
-Milan_2019 <- Milan_2019 %>% 
-  mutate(crime_category = ifelse(grepl("Omicidi", `Crimes Denounced`), "Omicidi",
-                                 ifelse(grepl("Furti", `Crimes Denounced`), "Furti",
-                                        ifelse(grepl("furti", `Crimes Denounced`), "Furti",
-                                               ifelse(grepl( "Rapine", `Crimes Denounced`),"Rapine",
-                                                      ifelse(grepl( "Incendi", `Crimes Denounced`),"Incendi",
-                                                             `Crimes Denounced`))))))
-```
-
-Once categorized the crimes, I decided to delete the observations where "count" was equal to 0, therefore that there was no record of that crime in the city of Milan. Then, I grouped the crimes by number of counts, in order to understand which were the most frequent categories of crimes reported in Milan.
-
-
-```{r}
-summary(Milan_2019$Count)
-
-Milan_2019 <- Milan_2019 %>% 
-  filter(Count > 0) %>% 
-  mutate(countgrouped = ifelse(Count < 150, "Seldom Crimes", 
-                               ifelse(Count < 3000, "Rare Crimes",
-                                  ifelse(Count < 6000, "Occasional Crimes",
-                                         ifelse(Count < 10000, "Often Crimes",
-                                                "Regular Crimes")))))
-                            
-```
-
-
-```{r}
-```
