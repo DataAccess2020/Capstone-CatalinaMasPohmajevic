@@ -76,6 +76,18 @@ Security_BA <- Dataset %>%
                                             "Night"))))
 (Security_BA$timeframe)
 
+Security_BA$franja_horaria <- as.numeric(Security_BA$franja_horaria)
+
+
+Security_BA <- Dataset %>% 
+  mutate(timeframe = ifelse (franja_horaria >= "7", "Morning",
+                             ifelse (franja_horaria >= "13" & franja_horaria < "18", "Afternoon", 
+                                     ifelse(franja_horaria >= "18" & franja_horaria < "23", "Evening", 
+                                            "Night"))))
+(Security_BA$timeframe)
+(Security_BA$timeframe)
+
+
 #Date format --> data belongs to 2019, therefore the column year is nonsense
 library(lubridate)
 
@@ -96,6 +108,20 @@ Distribution <- Security_BA %>%
   group_by(month, timeframe, comuna, barrio) %>% 
   count()
 
+
+ Security_BA %>%
+  group_by(month) %>% 
+  count() %>% 
+  ggplot(aes(x = month, y = n))+
+  geom_col()+
+  theme_bw()
+
+
+Distribution <- as.data.frame(Distribution)
+
+Distribution 
+
+
 Distribution %>% 
   ggplot(aes(x = month, y = n))+
   geom_col(position="dodge")+
@@ -109,21 +135,27 @@ Distribution %>%
 theme_bw()
 
 Security_BA %>% 
-  group_by(franja_horaria, comuna, month) %>% 
-  count() %>% 
-  ggplot(aes(x = n, y = franja_horaria))+
-  geom_col(position = "stack")+
-  facet_wrap()
+  group_by(timeframe, comuna, month) %>% 
+  count()%>% 
+  ggplot(aes(x = timeframe, y = n))+
+  geom_col(position = "dodge")+
 theme_bw()
 
 
 Security_BA %>% 
   group_by(tipo_delito, month, comuna) %>% 
   count() %>% 
-  ggplot(aes(x = month, y = n, fill = comuna, color = comuna))+
+  ggplot(aes(x = month, y = n, color = comune))+
   geom_col(position="dodge")+
   facet_wrap(~ tipo_delito)
 theme_bw()
+
+Security_BA %>% 
+  group_by(timeframe, comuna, month) %>% 
+  count()%>% 
+  ggplot(aes(x = timeframe, y = n))+
+  geom_col(position = "dodge")+
+  theme_bw()
 
 
 #Number of crimes x comuna
@@ -140,6 +172,25 @@ Security_BA %>%
   ggplot(aes(x = month, y = n, fill=tipo_delito, color=tipo_delito))+
   geom_col(position="stack")+
   facet_wrap(~ comuna) 
+theme_bw()
+
+
+Security_BA %>% 
+  group_by(tipo_delito, month, comuna, barrio) %>% 
+  count()%>%
+  ggplot(aes(x = month, y = n, color = tipo_delito, fill = tipo_delito))+
+  geom_col(position="stack")+
+  facet_wrap(~ comuna) +
+scale_x_discrete(labels = labelsmonths, guide = guide_axis(angle = 90))
+theme_bw()
+
+labelsmonths <- c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+
+Security_BA %>% 
+  group_by(tipo_delito, subtipo_delito) %>% 
+  count()%>%
+  ggplot(aes(x = tipo_delito, y = n, color = subtipo_delito, fill = subtipo_delito))+
+  geom_col(position="dodge")+
 theme_bw()
 
 #Timeframe
@@ -175,31 +226,33 @@ Security_BA %>%
 
 Comuna1 <- Security_BA %>% 
   filter(comuna == "1")%>% 
-  group_by(timeframe, tipo_delito, month) %>% 
+  group_by(tipo_delito, month) %>% 
   count() %>% 
-  ggplot(aes(x = month , y = n, color = timeframe, fill = timeframe))+
-  geom_col(position = "dodge")+
-  facet_wrap(~ tipo_delito, scales = "free_y")+
-  theme(legend.position = "top")
+  ggplot(aes(x = month , y = n, color = tipo_delito, fill = tipo_delito))+
+  geom_col(position = "stack")+
+  scale_x_discrete(labels = labelsmonths, "Comuna 1", guide = guide_axis(angle = 90))+
+      theme(legend.position = "none")
 
 Comuna3 <- Security_BA %>% 
   filter(comuna == "3")%>% 
-  group_by(timeframe, tipo_delito, month) %>% 
+  group_by(tipo_delito, month) %>% 
   count() %>% 
-  ggplot()+
-  geom_col(aes(x = month , y = n, color = timeframe, fill = timeframe))+
-  facet_wrap(~ tipo_delito, scales = "free_y")+
-  theme(legend.position = "top")
+  ggplot(aes(x = month , y = n, color = tipo_delito, fill = tipo_delito))+
+  geom_col(position = "stack")+
+  scale_x_discrete(labels = labelsmonths, "Comuna 3",  guide = guide_axis(angle = 90))+
+    theme(legend.position = "none")
 
 Comuna4 <- Security_BA %>% 
   filter(comuna == "4")%>% 
-  group_by(timeframe, tipo_delito, month) %>% 
+  group_by(tipo_delito, month) %>% 
   count() %>% 
-  ggplot()+
-  geom_col(aes(x = month , y = n, color = timeframe, fill = timeframe))+
-  facet_wrap(~ tipo_delito, scales = "free_y")+
-  theme(legend.position = "top")
+  ggplot(aes(x = month , y = n, color = tipo_delito, fill = tipo_delito))+
+  geom_col(position = "stack")+
+  scale_y_discrete(lab = "Number of Crime Records")+
+  scale_x_discrete(labels = labelsmonths, "Comuna 4", guide = guide_axis(angle = 90))+
+theme(legend.position = "right",  legend.title = element_text (size=8), legend.text=element_text(size=8))
 
+(Comuna1 | Comuna3 | Comuna4)
 
 library(ggplot2)
 library(patchwork)
@@ -254,16 +307,13 @@ Milan_2019 <- Milan_2019 %>%
 
 Milan_2019$Count <- as.numeric(Milan_2019$Count)
 
-Milan_2019$Count
+  
+summary(Milan_2019$Count)
 
-Milan_2019 <- Milan_2019 %>% 
-  mutate(Count_Recoded = ifelse(Count =< "100", "Less than 100", 
-                                ifelse(Count <= "1000", "Less than 1000",
-                                       ifelse(Count =< "5000", "Less than 5000",
-                                              ifelse(Count =< "10000", "Less than 10000",
-                                                     ifelse(Count =< "25000", "Less than 25000", 
-                                                            "More than 25k"))))))
+hist(Milan_2019$Count)
 
+Milan_2019$Count <- as.numeric(Milan_2019$Count)
+                stringsAsFactors = FALSE
 
 
 Milan_2019 %>% 
