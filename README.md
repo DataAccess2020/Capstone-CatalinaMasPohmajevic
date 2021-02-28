@@ -1,5 +1,3 @@
-# Tidy Project template
-
-Simple template to teach some good enough practices to set up an RStudio project.
-
-Toy dataset is the Digital Society Project data: Mechkova, Valeriya, Daniel Pemstein, Brigitte Seim, Steven Wilson. 2019. Digital Society Project Dataset v1. [http://digitalsocietyproject.org/](http://digitalsocietyproject.org/)
+#Capstone Project: Security Analysis in Ciudad Autonoma de Buenos Aires, Argentina 2017-2019
+Capstone Project on Security in the City of Buenos Aires during the period of 2017-2019. Triggered by the well-known levels of insecurity in Latinamerica and my experience as citizen of the city of Buenos Aires, the scope of the project was to analyze security in the metropolitan city through web scraping and data analysis to discover the levels of insecurity and unsafest areas of the city.
+The file contains the R code, the RMarkdown (.rmd), and a deliverable HTML for visualizing and publishing the research. 
