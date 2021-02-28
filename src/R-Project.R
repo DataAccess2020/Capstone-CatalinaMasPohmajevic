@@ -60,7 +60,7 @@ BA18 <- read.csv("Baires18.csv")
 BA19 <- read.csv("Baires19.csv")
 
 Crimes_BA19 <- BA19 %>% 
-  select(BA19$id, fecha, franja_horaria, tipo_delito, comuna, barrio)
+  select(id, fecha, franja_horaria, tipo_delito, comuna, barrio)
   select(id, fecha, franja_horaria, tipo_delito, comuna, barrio) 
 
 Crimes_BA18 <- BA18 %>% 
@@ -99,7 +99,6 @@ Crimes_BA17 <- Crimes_BA17 %>%
 library(lubridate)
 
 
-is.character(Security_BA$fecha)
 Crimes_BA17$fecha <- lubridate::as_date(Crimes_BA17$fecha)
 Crimes_BA18$fecha <- lubridate::as_date(Crimes_BA18$fecha)
 Crimes_BA19$fecha <- as.Date(as.character(Crimes_BA19$fecha), format = "%d-%m-%y")
@@ -363,5 +362,5 @@ Map19 <- leaflet(Unsafest19) %>%
 
 Map19
 
-wordcountaddin::word_count("Capstone-Project-CatalinaMasPohmajevic.Rmd")
+wordcountaddin::word_count("R-Project.R")
 
