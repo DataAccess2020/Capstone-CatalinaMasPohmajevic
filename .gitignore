@@ -2,8 +2,16 @@
 .Rhistory
 .Rapp.history
 
+#Data files
+.csv
+
 # Session Data files
 .RData
+.aux
+.log
+.out
+.tex
+.pdf
 
 # User-specific files
 .Ruserdata
