@@ -335,7 +335,7 @@ Graph_Timeframes +
 
 During 2017 and 2019, the majority of the crimes were committed during the Night and Evening. Instead, for 2018, it was the afternoon the unsafest timeframe within a day. 
 It's interesting to remark the high increase in crimes reported in 2019 during the night. We can see that for 2019, the times reported at night are 30%-50%  higher than those in 2017 and 2018, respectively.
-
+Afterwards, I dived into the types of crimes committed during each year.
 
 ```{r}
 

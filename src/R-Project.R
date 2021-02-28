@@ -1,11 +1,23 @@
 library(httr)
 library(jsonlite)
-library(tidyverse)
 library(ckanr)
 library(rvest)
 library(RCurl)
 library(readr)
+library(tidyverse)
+library(dplyr)
 library(rio)
+library(stringr)
+library(ggplot2)
+library(patchwork)
+library(leaflet)
+library(maps)
+library(leaflet.extras)
+library(leaflet)
+library(leafsync)
+library(rmdfiltr)
+library(devtools)
+library(magrittr)
 
 #Roadmap
 
@@ -32,387 +44,324 @@ data <- datalist$result$resources$url
 datasets <- as.vector(unlist(data))
 (datasets)
 
-Dataset <- read_csv(data[[4]])
-
-write.csv(Dataset, ".csv").
-
-download.file("https://cdn.buenosaires.gob.ar/datosabiertos/datasets/ministerio-de-justicia-y-seguridad/delitos/delitos_2019.csv", "Baires.csv")
-
-Problems <- problems(Dataset)
-
-write.csv(Dataset, "Baires.csv")
-
-write.csv(Problems, "Problems.csv")
-
+BA17 <- read_csv(data[[2]])
+BA18 <- read_csv(data[[3]])
+BA19 <- read_csv(data[[4]])
 #SEE PROBLEMS
-#SEE PROBLEMS
+problems19 <- problems(BA19)
 
-Dataset <- read_csv("Baires.csv")
+write.csv(BA17, "Baires17.csv")
+write.csv(BA18, "Baires18.csv")
+write.csv(BA19, "Baires19.csv")
+write.csv(problems19, "Problems19.csv")
 
-Dataset <- Dataset[,-1] 
-Dataset <- Dataset[,-6]  
+BA17 <- read.csv("Baires17.csv")
+BA18 <- read.csv("Baires18.csv")
+BA19 <- read.csv("Baires19.csv")
 
-Dataset$row <- 1:nrow(Dataset)
+Crimes_BA19 <- BA19 %>% 
+  select(BA19$id, fecha, franja_horaria, tipo_delito, comuna, barrio)
+  select(id, fecha, franja_horaria, tipo_delito, comuna, barrio) 
 
-Problems$row <- as.numeric(Problems$row)
-Dataset$X1 <- as.numeric(Dataset$X1)
+Crimes_BA18 <- BA18 %>% 
+  select(id, fecha, franja_horaria, tipo_delito, comuna, barrio) 
 
-Dataset <- Dataset %>% 
-  mutate(subtipo_delito = ifelse (row %in% Problems$row, Problems$actual, "NA"))
-
-head(Dataset)
-
-Dataset$subtipo_delito <- gsub('[[:digit:]]+', 'NA', Dataset$subtipo_delito)
-
-
+Crimes_BA17 <- BA17 %>% 
+  select(id, fecha, franja_horaria, tipo_delito, comuna, barrio)
 
 
 #TIMEFRAME
 
-Security_BA <- Dataset %>% 
-  mutate(timeframe = ifelse (franja_horaria >= "7", "Morning",
-                             ifelse (franja_horaria <= "18", "Afternoon", 
-                                     ifelse(franja_horaria > "18" & franja_horaria < "23", "Evening", 
-                                            "Night"))))
-(Security_BA$timeframe)
+Crimes_BA19 <- as_tibble(Crimes_BA19)
 
-Security_BA$franja_horaria <- as.numeric(Security_BA$franja_horaria)
+Crimes_BA19 <- Crimes_BA19 %>% 
+  mutate(timeframe = ifelse (franja_horaria >= 7 & franja_horaria <= 13, "Morning",
+                             ifelse (franja_horaria > 13 & franja_horaria <= 18, "Afternoon", 
+                                     ifelse(franja_horaria > 18 & franja_horaria < 22, "Evening", "Night"))))
+
+Crimes_BA18 <- Crimes_BA18 %>% 
+  mutate(timeframe = ifelse (franja_horaria >= 7 & franja_horaria <= 13, "Morning",
+                             ifelse (franja_horaria > 13 & franja_horaria <= 18, "Afternoon", 
+                                     ifelse(franja_horaria > 18 & franja_horaria < 22, "Evening", "Night"))))
+
+is.numeric(Crimes_BA17$franja_horaria) 
+
+Crimes_BA17$franja_horaria <- as.numeric(Crimes_BA17$franja_horaria)
+
+Crimes_BA17 <- Crimes_BA17 %>% 
+  mutate(timeframe = ifelse (franja_horaria >= 7 & franja_horaria <= 13, "Morning",
+                             ifelse (franja_horaria > 13 & franja_horaria <= 18, "Afternoon", 
+                                     ifelse(franja_horaria > 18 & franja_horaria < 22, "Evening", "Night"))))
 
 
-Security_BA <- Dataset %>% 
-  mutate(timeframe = ifelse (franja_horaria >= "7", "Morning",
-                             ifelse (franja_horaria >= "13" & franja_horaria < "18", "Afternoon", 
-                                     ifelse(franja_horaria >= "18" & franja_horaria < "23", "Evening", 
-                                            "Night"))))
-(Security_BA$timeframe)
-(Security_BA$timeframe)
+#Date Format
 
-
-#Date format --> data belongs to 2019, therefore the column year is nonsense
 library(lubridate)
 
 
 is.character(Security_BA$fecha)
+Crimes_BA17$fecha <- lubridate::as_date(Crimes_BA17$fecha)
+Crimes_BA18$fecha <- lubridate::as_date(Crimes_BA18$fecha)
+Crimes_BA19$fecha <- as.Date(as.character(Crimes_BA19$fecha), format = "%d-%m-%y")
 
-Security_BA$fecha <- as.Date.character(Security_BA$fecha, format = c("%d-%m-%Y"))
 
-Security_BA <- Security_BA %>%
+Crimes_BA19 <- Crimes_BA19 %>%
   separate(fecha, sep="-", into = c("year", "month", "day"))
-
+Crimes_BA18 <- Crimes_BA18 %>%
+  separate(fecha, sep="-", into = c("year", "month", "day"))
+Crimes_BA17 <- Crimes_BA17 %>%
+  separate(fecha, sep="-", into = c("year", "month", "day"))
 
 #Visualization 1 | Distributon
 
 library(ggplot2)
 
-Distribution <- Security_BA %>%
-  group_by(month, timeframe, comuna, barrio) %>% 
-  count()
+Dist19 <- Crimes_BA19 %>%
+  group_by(year) %>% 
+  count() 
+Dist18 <-Crimes_BA18 %>%
+  group_by(year) %>% 
+  count() 
+DistributionYears <- full_join(Dist19, Dist18)
+Dist17 <- Crimes_BA17 %>%
+  group_by(year) %>% 
+  count() 
 
+DistributionYears <- full_join(Dist17, DistributionYears)
 
- Security_BA %>%
+DistributionYears %>% 
+  ggplot(aes(x = year, y = n))+
+  geom_col(fill = "#00abff")+
+  scale_x_discrete(guide = guide_axis(angle = 60))+
+  theme_bw()+
+  theme(axis.text.x=element_text(size=rel(1)))+
+  ggtitle('2019')+
+  xlab(" ")+
+  ylab(" ")
+labelsmonths <- c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+
+Distribution19 <- Crimes_BA19 %>%
   group_by(month) %>% 
   count() %>% 
   ggplot(aes(x = month, y = n))+
-  geom_col()+
-  theme_bw()
+  geom_col(fill = "#f8766d")+
+  scale_x_discrete(labels = labelsmonths, guide = guide_axis(angle = 60))+
+  theme_bw()+
+  theme(axis.text.x=element_text(size=rel(1)))+
+  ggtitle('2019')+
+  xlab(" ")+
+  ylab(" ")
 
-
-Distribution <- as.data.frame(Distribution)
-
-Distribution 
-
-
-Distribution %>% 
+Distribution18 <- Crimes_BA18%>%
+  group_by(month) %>% 
+  count() %>% 
   ggplot(aes(x = month, y = n))+
-  geom_col(position="dodge")+
-  facet_wrap(~ timeframe)+
-  theme_bw()
+  geom_col(fill = "#7cae00")+
+  scale_x_discrete(labels = labelsmonths, guide = guide_axis(angle = 60))+
+  theme_bw()+
+  theme(axis.text.x=element_text(size=rel(1)))+
+  ggtitle('2018')+
+  xlab("Month")+
+  ylab(" ")
 
 
-Distribution %>% 
-  ggplot(aes(x = month, y = n, fill = comuna, color = comuna))+
-  geom_boxplot()
-theme_bw()
+Distribution17 <- Crimes_BA17%>%
+  group_by(month) %>% 
+  count() %>% 
+  ggplot(aes(x = month, y = n))+
+  geom_col(fill = "#01bfc4")+
+  scale_x_discrete(labels = labelsmonths, guide = guide_axis(angle = 60))+
+  theme_bw()+
+  theme(axis.text.x=element_text(size=rel(1)))+
+  ggtitle('2017')+
+  ylab("Number of Crimes")+
+  xlab(" ")
 
-Security_BA %>% 
-  group_by(timeframe, comuna, month) %>% 
-  count()%>% 
-  ggplot(aes(x = timeframe, y = n))+
+Distribution <- (Distribution17 | Distribution18 | Distribution19)
+
+Distribution + plot_annotation(
+  title = 'Crimes Recorded among the years in the City of Buenos Aires', 
+  theme=theme(plot.title=element_text(size=8))) & 
+  theme(text=element_text("mono"))
+
+#Crime per timeframe
+
+
+
+labeltimes <- c("Afternoon", "Morning", "Evening", "Night")
+
+Timeframes17 <- Crimes_BA17 %>% 
+  group_by(timeframe, month) %>% 
+  count() %>% 
+  na.omit() %>% 
+  ggplot(aes(x = timeframe, y = n, fill = timeframe))+
+  geom_col( position = "dodge")+
+  scale_x_discrete(labels = labeltimes, guide = guide_axis(angle = 60))+
+  theme_bw()+
+  theme(legend.position = "none", axis.text.x=element_text(size=rel(1)))+
+  ggtitle('2017')+
+  ylim(0,6000)+
+  ylab("Number of Crimes")+
+  xlab(" ")
+
+Timeframes18 <- Crimes_BA18 %>% 
+  group_by(timeframe, month) %>% 
+  count() %>% 
+  na.omit() %>% 
+  ggplot(aes(x = timeframe, y = n, fill = timeframe))+
   geom_col(position = "dodge")+
-theme_bw()
+  scale_x_discrete(labels = labeltimes, guide = guide_axis(angle = 60))+
+  theme_bw()+
+  theme(legend.position = "none",axis.text.x=element_text(size=rel(1)))+
+  ggtitle('2018')+
+  ylim(0,6000)+
+  ylab("")+
+  xlab("Timeframe")
 
-
-Security_BA %>% 
-  group_by(tipo_delito, month, comuna) %>% 
+Timeframes19 <- Crimes_BA19 %>% 
+  group_by(timeframe, month) %>% 
   count() %>% 
-  ggplot(aes(x = month, y = n, color = comune))+
-  geom_col(position="dodge")+
-  facet_wrap(~ tipo_delito)
-theme_bw()
-
-Security_BA %>% 
-  group_by(timeframe, comuna, month) %>% 
-  count()%>% 
-  ggplot(aes(x = timeframe, y = n))+
+  na.omit() %>% 
+  ggplot(aes(x = timeframe, y = n, fill = timeframe))+
   geom_col(position = "dodge")+
-  theme_bw()
+  scale_x_discrete(labels = labeltimes, guide = guide_axis(angle = 60))+
+  theme_bw()+
+  theme(legend.position = "none", axis.text.x=element_text(size=rel(1)))+
+  ylim(0,6000)+
+  ggtitle('2019')+
+  ylab(" ")+
+  xlab(" ")
 
+Graph_Timeframes <-  ( Timeframes17 | Timeframes18 | Timeframes19)
 
-#Number of crimes x comuna
+Graph_Timeframes +
+  plot_annotation(
+    title = 'Crimes Recorded per Timeframe in the City of Buenos Aires', theme=theme(plot.title=element_text(size=8))) & theme(text=element_text("mono"))
 
-Security_BA %>% 
-  group_by(comuna, barrio) %>% 
-  count()
+#Type of crime committed
 
-# Type of crimes x comuna
+CrimeYears <- Crimes_BA17 %>% 
+  group_by(year, tipo_delito) %>% 
+  na.omit() %>% 
+  count() 
 
-Security_BA %>% 
-  group_by(tipo_delito, month, comuna, barrio) %>% 
-  count()%>%
-  ggplot(aes(x = month, y = n, fill=tipo_delito, color=tipo_delito))+
-  geom_col(position="stack")+
-  facet_wrap(~ comuna) 
-theme_bw()
+CrimeYears2 <- Crimes_BA18 %>% 
+  group_by(year, tipo_delito) %>% 
+  na.omit() %>% 
+  count() 
 
+CrimeYears4 <- Crimes_BA19 %>% 
+  group_by(year, tipo_delito) %>% 
+  na.omit() %>% 
+  count() 
 
-Security_BA %>% 
-  group_by(tipo_delito, month, comuna, barrio) %>% 
-  count()%>%
-  ggplot(aes(x = month, y = n, color = tipo_delito, fill = tipo_delito))+
-  geom_col(position="stack")+
-  facet_wrap(~ comuna) +
-scale_x_discrete(labels = labelsmonths, guide = guide_axis(angle = 90))
-theme_bw()
+CrimeYears3 <- full_join(CrimeYears, CrimeYears2)
 
-labelsmonths <- c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+CrimeYears <- full_join(CrimeYears4, CrimeYears3)
 
-Security_BA %>% 
-  group_by(tipo_delito, subtipo_delito) %>% 
-  count()%>%
-  ggplot(aes(x = tipo_delito, y = n, color = subtipo_delito, fill = subtipo_delito))+
+CrimeYears %>% 
+  ggplot(aes(x = year, y = n, color = tipo_delito, fill = tipo_delito))+
   geom_col(position="dodge")+
-theme_bw()
-
-#Timeframe
-
-Graph_timeframe <-  Security_BA %>%
-  group_by(timeframe, month, comuna) %>% 
-  count()
-
-TimeFrame1 <- Graph_timeframe %>% 
-  ggplot(aes(x = month, y = n, fill = timeframe, color = timeframe))+
-  geom_col(position="dodge")+
-  facet_wrap(~ timeframe)+
-  theme_bw()
-
-#TYPE OF CRIME PER COMUNA
-
-Security_BA %>% 
-  group_by(tipo_delito, month, comuna) %>% 
-  count() %>% 
-  ggplot()+
-  geom_col(aes(x = month, y = n, fill = tipo_delito, color = tipo_delito), position = "dodge")+
-  theme(legend.position = "top")
-
-
-#comuna mas peligrosa
-
-Security_BA %>%
-  group_by(comuna) %>% 
-  count() %>% 
-  ggplot()+
-  geom_col(aes(x = comuna, y = n), position = "dodge")+
-  theme(legend.position = "top")
-
-Comuna1 <- Security_BA %>% 
-  filter(comuna == "1")%>% 
-  group_by(tipo_delito, month) %>% 
-  count() %>% 
-  ggplot(aes(x = month , y = n, color = tipo_delito, fill = tipo_delito))+
-  geom_col(position = "stack")+
-  scale_x_discrete(labels = labelsmonths, "Comuna 1", guide = guide_axis(angle = 90))+
-      theme(legend.position = "none")
-
-Comuna3 <- Security_BA %>% 
-  filter(comuna == "3")%>% 
-  group_by(tipo_delito, month) %>% 
-  count() %>% 
-  ggplot(aes(x = month , y = n, color = tipo_delito, fill = tipo_delito))+
-  geom_col(position = "stack")+
-  scale_x_discrete(labels = labelsmonths, "Comuna 3",  guide = guide_axis(angle = 90))+
-    theme(legend.position = "none")
-
-Comuna4 <- Security_BA %>% 
-  filter(comuna == "4")%>% 
-  group_by(tipo_delito, month) %>% 
-  count() %>% 
-  ggplot(aes(x = month , y = n, color = tipo_delito, fill = tipo_delito))+
-  geom_col(position = "stack")+
-  scale_y_discrete(lab = "Number of Crime Records")+
-  scale_x_discrete(labels = labelsmonths, "Comuna 4", guide = guide_axis(angle = 90))+
-theme(legend.position = "right",  legend.title = element_text (size=8), legend.text=element_text(size=8))
-
-(Comuna1 | Comuna3 | Comuna4)
-
-library(ggplot2)
-library(patchwork)
-
-#Milano
-
-url2 <- ("https://dati.comune.milano.it/api/3/action/datastore_search?q=2019&resource_id=8b03b9f2-f2d7-4408-b439-bc6efc093cff")
-
-page2 <- GET(url2) # API request
-status_code(page2) # # Check that the call is successful
-
-datalist <- fromJSON(url2) 
-Milano_2019 <- datalist$result$records
-view(Milano_2019) 
-as.data.frame(Milano_2019)
-view(Milano_2019)
-head(Milano_2019)
-download.file("https://dati.comune.milano.it/api/3/action/datastore_search?q=2019&resource_id=8b03b9f2-f2d7-4408-b439-bc6efc093cff", "Milano.csv")
-
-
-names(Milano_2019)[3] <- "Crimes Denounced"
-head(Milano_2019)
-names(Milano_2019)[4] <- "Count"
-
-#DELETE 56 AND MISSING OBSERVATION 
-
-#MILANO
-
-Milan_2019 <- Milano_2019 %>% 
-  slice(-c(56))
-Milan_2019 = na.omit(Milan_2019)
-
-
-#turn count into a numeric vector
-
-Milan_2019$Count <- as.numeric(Milan_2019$Count)
-
-(Milan_2019$`Crimes Denounced`)
-
-Milan_2019$`Crimes Denounced` <- str_trim(Milan_2019$`Crimes Denounced`)
-
-library(stringr)
-
-Milan_2019 <- Milan_2019 %>% 
-  mutate(crime_category = ifelse(grepl("Omicidi", `Crimes Denounced`), "Omicidi",
-                                 ifelse(grepl("Furti", `Crimes Denounced`), "Furti",
-                                        ifelse(grepl("furti", `Crimes Denounced`), "Furti",
-                                               ifelse(grepl( "Rapine", `Crimes Denounced`),"Rapine",
-                                                      ifelse(grepl( "Incendi", `Crimes Denounced`),"Incendi",
-                                                             `Crimes Denounced`))))))
-
-
-Milan_2019$Count <- as.numeric(Milan_2019$Count)
-
-  
-summary(Milan_2019$Count)
-
-hist(Milan_2019$Count)
-
-Milan_2019$Count <- as.numeric(Milan_2019$Count)
-                stringsAsFactors = FALSE
-
-
-Milan_2019 %>% 
-  group_by(Count_Recoded) %>% 
-  ggplot(aes(x = crime_category, y = Count))+
-  geom_col(position = "dodge")+
-  coord_flip()+
-  facet_wrap(~ Count_Recoded, scales = "free_x")
-theme_bw()
-
-
-
-facet_wrap(~ crime_category, scales = "free_x")+
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  #IF I ADD INFO BUENOS AIRES 18
-
-
-Graph_TimeFrame2 <-  Security_BA18 %>%
-  group_by(timeframe, month, comuna) %>% 
-  count()
-
-
-TimeFrame2 <- Graph_TimeFrame2 %>% 
-  ggplot(aes(x = month, y = n, fill = timeframe, color = timeframe))+
-  geom_col(position="dodge")+
-  facet_wrap(~ Timeframe)+
-  theme_bw()
-
-(TimeFrame1 | TimeFrame2)
-
-
-
-
-
-
-
-
-
-
-
-
+  theme_bw()+
+  ylab("Number of Crimes")+
+  xlab("Year")+
+  theme(legend.position= "right")+
+  plot_annotation(title = "Crimes' Categories in the City of Buenos Aires",theme=theme(plot.title = element_text(size=9))) & theme(text=element_text("mono"))
 
 
 
 #map visualization
 
-install.packages("maptools")
+SafeArea17 <- Crimes_BA17  %>%
+  group_by(comuna) %>% 
+  count() %>% 
+  ggplot(aes(x = comuna, y = n, fill = comuna == "1" | comuna == "4" | comuna == "14" ),position = "dodge")+
+  geom_col()+  
+  xlim(0,15)+
+  ylim(0,20000)+
+  scale_x_continuous(breaks = seq(1,15, by = 2))+
+  ylab("Number of Crimes Committed")+
+  xlab(" ")+
+  ggtitle("2017")+
+  theme(legend.position = "none", axis.text.x=element_text(size=rel(0.8)))
 
-library(maptools)
-install.packages("mapsapi")
-library(mapsapi)
-install.packages("openstreetmaps")
+SafeArea18 <- Crimes_BA18  %>%
+  group_by(comuna) %>% 
+  count() %>% 
+  ggplot(aes(x = comuna, y = n, fill = comuna == "1" | comuna == "3" | comuna == "4" ), position = "dodge")+
+  geom_col()+
+  ylim(0,20000)+
+  scale_x_continuous(breaks = seq(1,15, by = 2))+
+  xlab("Comuna")+
+  ylab(" ")+
+  ggtitle("2018")+
+  theme(legend.position = "none", axis.text.x=element_text(size=rel(0.8)))
 
-ggmap()
+SafeArea19 <- Crimes_BA19  %>%
+  group_by(comuna) %>% 
+  count() %>% 
+  ggplot(aes(x = comuna, y = n, fill = comuna == "1" | comuna == "3" | comuna == "4" ), position = "dodge")+
+  geom_col()+
+  xlab(" ")+
+  ylab(" ")+
+  ylim(0,20000)+
+  ggtitle("2019")+
+  scale_x_continuous(breaks = seq(1,15, by = 2))+
+  theme(legend.position = "none", axis.text.x=element_text(size=rel(0.8)))
 
-#Type of crimes x comuna x timeframe 
+Graph_SafeArea <-  ( SafeArea17 | SafeArea18 |SafeArea19)
 
-Security_BA %>% 
-  group_by(comuna, tipo_delito, timeframe) %>% 
-  count()
-
-
-argentina <- c(left = -125, bottom = 25.75, right = -67, top = 49)
-get_stamenmap(argentina, zoom = 5, maptype = "toner-lite") %>% ggmap() 
-
-place <- "Ciudad Autónoma de Buenos Aires"
-get_googlemap(place, zoom=10)
-
-
-
-
-
-
+Graph_SafeArea + plot_annotation(
+  title = 'Crimes Committed by Comuna in City of Buenos Aires', 
+  theme=theme(plot.title=element_text(size=9))) & 
+  theme(text=element_text("mono"))
 
 
+Unsafest17 <- read.csv(textConnection("
+Comuna,Lat,Long,N
+1,-34.6152,-58.3738,16281		
+4,-34.6493,-58.3964,10554	
+14,-34.5889, -58.4306,10008	
+"))
+
+Unsafest18 <- read.csv(textConnection("
+Comuna,Lat,Long,N
+1,-34.6152,-58.3738,16736	
+3,-34.6107,-58.4068,10430
+4,-34.6493,-58.3964,9616	
+"))
+
+Unsafest19 <- read.csv(textConnection("
+Comuna,Lat,Long,N
+1,-34.6152,-58.3738,19452
+3,-34.6107,-58.4068,11498	
+4,-34.6493,-58.3964,10295
+"))
 
 
+Map17 <- leaflet(Unsafest17) %>% 
+  addTiles() %>%
+  addCircles(lng = ~Long, lat = ~Lat, weight = 1,
+             radius = ~sqrt(N) * 10, popup = ~Comuna
+  )
 
+Map17 
 
-#IMPORT INFORMATION MILANO
+Map18 <- leaflet(Unsafest18) %>% 
+  addTiles() %>%
+  addCircles(lng = ~Long, lat = ~Lat, weight = 1,
+             radius = ~sqrt(N) * 10, popup = ~Comuna
+  )
 
-url2 <- ("https://dati.comune.milano.it/api/3/action/datastore_search?q=2019&resource_id=8b03b9f2-f2d7-4408-b439-bc6efc093cff")
-page2 <- GET(url2) # API request
-status_code(page2) # # Check that the call is successful
-datalist <- fromJSON(url2) 
-Milano_2019 <- datalist$result$records
-view(Milano_2019) 
-as.data.frame(Milano_2019)
+Map18
 
-translateR::translate(Milano_2019, Milano_2019$Reati_denunciati_tipologia,  )
+Map19 <- leaflet(Unsafest19) %>% 
+  addTiles() %>%
+  addCircles(lng = ~Long, lat = ~Lat, weight = 1,
+             radius = ~sqrt(N) * 10, popup = ~Comuna
+  )
 
-translateR::translate()
-translateR::getMicrosoftLanguages()
+Map19
+
+wordcountaddin::word_count("Capstone-Project-CatalinaMasPohmajevic.Rmd")
+
