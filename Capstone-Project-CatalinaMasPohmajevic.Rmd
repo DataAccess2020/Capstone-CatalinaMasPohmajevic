@@ -360,11 +360,15 @@ CrimeYears <- full_join(CrimeYears4, CrimeYears3)
 
 CrimeYears %>% 
   ggplot(aes(x = year, y = n, color = tipo_delito, fill = tipo_delito))+
+    scale_fill_discrete(labels = c('Murder', "Non-violent theft", "Injuries", "Violent Robbery"))+
+      scale_color_discrete(labels = c('Murder', "Non-violent theft", "Injuries", "Robbery"))+
   geom_col(position="dodge")+
 theme_bw()+
       ylab("Number of Crimes")+
   xlab("Year")+
     theme(legend.position= "right")+
+  labs(fill = "Crime Category")+
+  labs(color = "Crime Category")
   plot_annotation(title = "Crimes' Categories in the City of Buenos Aires",theme=theme(plot.title = element_text(size=9))) & theme(text=element_text("mono"))
 
 ```
