@@ -1,6 +1,6 @@
 ---
 title: "Capstone Project: Security Analysis in CABA, 2017-2019"
-subtitle: Data Access Course | Daps& CO, Università degli Studi di Milano"
+subtitle: Data Access Course | Daps& CO, Università degli Studi di Milano
 author: "Catalina Mas Pohmajevic"
 date: "25/02/2021"
 output:
